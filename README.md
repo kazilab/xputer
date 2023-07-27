@@ -35,3 +35,5 @@ On Mac OS X:
 sudo python ./setup.py install 
 
 https://github.com/kazilab/xputer/blob/58a2e468f0fe66cb0005fc03341d0f983987ed5f/xgui.png
+
+xgui.png
