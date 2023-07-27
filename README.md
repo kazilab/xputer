@@ -5,7 +5,7 @@ The application has no guarantee and must be used with the user's responsibility
 
 We recommend using the Anaconda environment (install a recent copy of Anaconda from https://www.anaconda.com). Run Anaconda Powershell Prompt and use "pip install xputer" for installation.
 
-To run the application GUI use "python -c "from xputer import xgui".
+To run the application GUI install with "pip install xputer[gui] and to run use "python -m xputer".
 
 Jupyter Notebook script
 from xputer import xgui
