@@ -11,6 +11,7 @@ Jupyter Notebook script
 from xputer import xgui
 xgui()
 
+![image](https://github.com/kazilab/xputer/blob/58a2e468f0fe66cb0005fc03341d0f983987ed5f/xgui.png)
 
 To incorporate a pipeline: 
 from xputer import Xpute
