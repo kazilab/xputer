@@ -101,7 +101,7 @@ class Xpute(BaseEstimator):
         if self.test_mode:
             df_nan_imputed.to_csv('02_cnmf_df_nan_imputed.csv')
 
-        xgb_parameters_dict, imputed, df_clean_nan_imputed, df_encoded_nan_imputed = first_run(df_copy, df_clean,
+        xgb_parameters_dict, imputed, df_clean_nan_imputed, df_encoded_nan_imputed = first_run(df_clean,
                                                                                                df_encoded,
                                                                                                df_nan_imputed,
                                                                                                self.xgb_iter,
@@ -117,7 +117,7 @@ class Xpute(BaseEstimator):
         if self.iterations:
             n_iterations = max(self.n_iterations, 1)
             for _ in range(n_iterations):
-                df_clean_nan_imputed, df_encoded_nan_imputed = iterative(df_copy, df_clean, df_encoded,
+                df_clean_nan_imputed, df_encoded_nan_imputed = iterative(df_clean, df_encoded,
                                                                          df_encoded_nan_imputed, self.xgb_iter,
                                                                          xgb_parameters_dict)
                 if self.test_mode:
