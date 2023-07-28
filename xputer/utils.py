@@ -551,11 +551,10 @@ def iter_rxgb(df_encoded, df_nan_imputed, column, d_type, xgb_iter, xgb_paramete
     return y
 
 
-def first_run(df_copy, df_clean, df_encoded, df_nan_imputed, xgb_iter, optuna_for_xgb, optuna_n_trials):
+def first_run(df_clean, df_encoded, df_nan_imputed, xgb_iter, optuna_for_xgb, optuna_n_trials):
     """
     To run XGBRegression using a column as a label
     Args:
-        df_copy: a copy of original df
         df_clean: The df we get after preprocessing
         df_encoded: Cleaned df encoded by labeled encoder
         df_nan_imputed: The df received from previous imputation.
@@ -566,18 +565,18 @@ def first_run(df_copy, df_clean, df_encoded, df_nan_imputed, xgb_iter, optuna_fo
         Imputed column by XGBoost
     """
     xgb_parameters_dict = {}
-    imputed = pd.DataFrame(False, index=df_copy.index, columns=df_copy.columns)
+    imputed = pd.DataFrame(False, index=df_clean.index, columns=df_clean.columns)
     df_clean_nan_imputed = df_clean.copy()
     df_encoded_nan_imputed = df_encoded.copy()
     df_clean_update = df_clean.copy()
     df_encoded_update = df_encoded.copy()
 
     # Iterate over all columns
-    for column in tqdm(df_copy.columns):  # Wrap df.columns with tqdm(...)
-        counts = count_dtypes(df_copy[column])
-        int_float = counts['int_float'] / df_copy[column].shape[0]
-        string = counts['str'] / df_copy[column].shape[0]
-        other = counts['other'] / df_copy[column].shape[0]
+    for column in tqdm(df_clean.columns):  # Wrap df.columns with tqdm(...)
+        counts = count_dtypes(df_clean[column])
+        int_float = counts['int_float'] / df_clean[column].shape[0]
+        string = counts['str'] / df_clean[column].shape[0]
+        other = counts['other'] / df_clean[column].shape[0]
         xgb_parameters = None
         # Check if the column has missing values
         if df_clean_update[column].isna().sum() > 0:
@@ -629,11 +628,10 @@ def first_run(df_copy, df_clean, df_encoded, df_nan_imputed, xgb_iter, optuna_fo
     return xgb_parameters_dict, imputed, df_clean_nan_imputed, df_encoded_nan_imputed
 
 
-def iterative(df_copy, df_clean, df_encoded, df_clean_nan_imputed_prev, xgb_iter, xgb_parameters_dict):
+def iterative(df_clean, df_encoded, df_clean_nan_imputed_prev, xgb_iter, xgb_parameters_dict):
     """
     To run XGBRegression using a column as a label
     Args:
-        df_copy: a copy of original df
         df_clean: The df we get after preprocessing
         df_encoded: Cleaned df encoded by labeled encoder
         df_clean_nan_imputed_prev: The df received from previous imputation.
@@ -649,11 +647,11 @@ def iterative(df_copy, df_clean, df_encoded, df_clean_nan_imputed_prev, xgb_iter
     df_encoded_update = df_encoded.copy()
 
     # Iterate over all columns
-    for column in tqdm(df_copy.columns):  # Wrap df.columns with tqdm(...)
-        counts = count_dtypes(df_copy[column])
-        int_float = counts['int_float'] / df_copy[column].shape[0]
-        string = counts['str'] / df_copy[column].shape[0]
-        other = counts['other'] / df_copy[column].shape[0]
+    for column in tqdm(df_clean.columns):  # Wrap df.columns with tqdm(...)
+        counts = count_dtypes(df_clean[column])
+        int_float = counts['int_float'] / df_clean[column].shape[0]
+        string = counts['str'] / df_clean[column].shape[0]
+        other = counts['other'] / df_clean[column].shape[0]
         # Check if the column has missing values
         if df_clean_update[column].isna().sum() > 0:
             # Check if the column is numerical or categorical
