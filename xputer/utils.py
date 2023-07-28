@@ -628,7 +628,7 @@ def first_run(df_clean, df_encoded, df_nan_imputed, xgb_iter, optuna_for_xgb, op
     return xgb_parameters_dict, imputed, df_clean_nan_imputed, df_encoded_nan_imputed
 
 
-def iterative(df_clean, df_encoded, df_clean_nan_imputed_prev, xgb_iter, xgb_parameters_dict):
+def iterative(df_clean, df_encoded, df_nan_imputed_prev, xgb_iter, xgb_parameters_dict):
     """
     To run XGBRegression using a column as a label
     Args:
@@ -656,7 +656,7 @@ def iterative(df_clean, df_encoded, df_clean_nan_imputed_prev, xgb_iter, xgb_par
         if df_clean_update[column].isna().sum() > 0:
             # Check if the column is numerical or categorical
             if int_float > 0.6:
-                y = iter_rxgb(df_encoded, df_clean_nan_imputed_prev, column, 'integer', xgb_iter,
+                y = iter_rxgb(df_encoded, df_nan_imputed_prev, column, 'integer', xgb_iter,
                               xgb_parameters_dict[column])
                 df_clean_update[column] = y
                 df_encoded_update[column] = y
@@ -681,7 +681,7 @@ def iterative(df_clean, df_encoded, df_clean_nan_imputed_prev, xgb_iter, xgb_par
                 df_clean_update[column] = df_clean_update[column].replace([le.transform(['ZZZ'])[0]], np.nan)
                 # print('Xpute4', df_copy[column])
 
-                y = iter_rxgb(df_encoded, df_clean_nan_imputed_prev, column, 'object', xgb_iter,
+                y = iter_rxgb(df_encoded, df_nan_imputed_prev, column, 'object', xgb_iter,
                               xgb_parameters_dict[column])
                 df_clean_update[column] = y
                 df_encoded_update[column] = y
