@@ -47,7 +47,7 @@ def count_dtypes(series):
     return counts
 
 
-def preprocessing_df(df, impute_zeros, initialize, test_mode):
+def preprocessing_df(df, impute_zeros=False, initialize=False, test_mode=False):
     """
     Prepare df to use as data for XGBoost imputation. This will be done by checking each column, replacing 'object'
     data by numbers using label encoder, replacing any object data in numerical data column, etc.
