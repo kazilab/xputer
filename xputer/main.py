@@ -115,7 +115,7 @@ class Xpute(BaseEstimator):
             df_encoded_nan_imputed.to_csv('03_first_run_df_encoded_nan_imputed.csv')
 
         if self.iterations:
-            n_iterations = max(self.n_iterations, 1)
+            n_iterations = max(1, min(self.n_iterations, 9))
             for _ in range(n_iterations):
                 df_clean_nan_imputed, df_encoded_nan_imputed = iterative(df_clean, df_encoded,
                                                                          df_encoded_nan_imputed, self.xgb_iter,
