@@ -244,7 +244,7 @@ def optuna_xgb(x, y, label_d_type, tree_method, trials):
     Returns:
         The best hyperparameter
     """
-    n_trials = max(trials, 5)
+    n_trials = max(5, min(trials, 50))
 
     def cs_class(y_train, train_pred, y_valid, valid_pred):
         train_acc = accuracy_score(y_train, train_pred)
@@ -361,7 +361,7 @@ def rxgb(df_encoded, df_nan_imputed, column, d_type, xgb_iter, optuna_for_xgb, o
     else:
         tree_method = 'auto'
 
-    xgb_iter = max(xgb_iter, 1)
+    xgb_iter = max(3, min(xgb_iter, 9))
 
     df_ori_nan_train = df_encoded[df_encoded[column].notna()]
 
@@ -471,7 +471,7 @@ def iter_rxgb(df_encoded, df_nan_imputed, column, d_type, xgb_iter, xgb_paramete
     else:
         tree_method = 'auto'
 
-    xgb_iter = max(xgb_iter, 1)
+    xgb_iter = max(3, min(xgb_iter, 9))
 
     df_ori_nan_train = df_encoded[df_encoded[column].notna()]
 
