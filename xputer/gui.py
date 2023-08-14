@@ -12,39 +12,39 @@ from .main import xpute
 class XputeThread(QThread):
     signal = pyqtSignal('PyQt_PyObject')
 
-    def __init__(self, df, impute_zeros,initialize, xgb_iter, mf_for_xgb, use_transformed_df,
-                 optuna_for_xgb, optuna_n_trials, iterations, n_iterations, save_imputed_df, save_plots):
+    def __init__(self, df, impute_zeros,pre_imputation, xgb_models, mf_for_xgb, use_transformed_df,
+                 optuna_for_xgb, optuna_n_trials, n_iterations, save_imputed_df, save_plots, test_mode):
         QThread.__init__(self)
         self.df = df
         self.impute_zeros = impute_zeros
-        self.initialize = initialize
-        self.xgb_iter = xgb_iter
+        self.pre_imputation = pre_imputation
+        self.xgb_models = xgb_models
         self.mf_for_xgb = mf_for_xgb
         self.use_transformed_df = use_transformed_df
         self.optuna_for_xgb = optuna_for_xgb
         self.optuna_n_trials = optuna_n_trials
-        self.iterations = iterations
         self.n_iterations = n_iterations
         self.save_imputed_df = save_imputed_df
         self.save_plots = save_plots
+        self.test_mode = test_mode
 
-    def __del__(self):
-        self.wait()
+    # def __del__(self):
+    #    self.wait()
 
     def run(self):
         # simulate a long task
         result = xpute(df=self.df,
                        impute_zeros=self.impute_zeros,
-                       initialize=self.initialize,
-                       xgb_iter=self.xgb_iter,
+                       pre_imputation=self.pre_imputation,
+                       xgb_models=self.xgb_models,
                        mf_for_xgb=self.mf_for_xgb,
                        use_transformed_df=self.use_transformed_df,
                        optuna_for_xgb=self.optuna_for_xgb,
                        optuna_n_trials=self.optuna_n_trials,
-                       iterations=self.iterations,
                        n_iterations=self.n_iterations,
                        save_imputed_df=self.save_imputed_df,
-                       save_plots=self.save_plots)
+                       save_plots=self.save_plots,
+                       test_mode=self.test_mode)
         self.signal.emit(result)  # we use a signal to return the result
 
 
@@ -95,7 +95,7 @@ class Window(QMainWindow):
         self.title.setStyleSheet("color: lightblue; font-size: 45px; font-weight: bold;")
         self.layout.addWidget(self.title, 0, 0, 1, 2)  # added to row 0, column 0
 
-        self.kazilab = QLabel("@KaziLab.se Lund University")
+        self.kazilab = QLabel("KaziLab.se @ Lund University")
         self.kazilab.setAlignment(Qt.AlignRight)
         self.kazilab.setStyleSheet("color: #3399CC; font-size: 10px; font-weight: bold;")
         self.layout.addWidget(self.kazilab, 0, 2, 1, 2)  # added to row 0, column 0
@@ -120,7 +120,8 @@ class Window(QMainWindow):
         # Label for load csv file button
         self.load_csv_label = QLabel("Load data file:")
         self.load_csv_label.setAlignment(Qt.AlignRight)
-        self.load_csv_label.setToolTip('Click "Load CSV file" button to load a data file.')
+        self.load_csv_label.setToolTip('Click "Load CSV file" button to load a data file. '
+                                       'Supported separators: ",", ";" and "\t"')
         self.load_csv_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
         #self.layout.addWidget(self.load_csv_label, 1, 0, 1, 1)  # added to row 0, column 0
 
@@ -130,7 +131,8 @@ class Window(QMainWindow):
         self.load_csv_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.load_csv_button.setMinimumSize(100, 20)  # Set minimum size of QSpinBox (width, height)
         self.load_csv_button.setMaximumSize(100, 20)  # Set maximum size of QSpinBox (width, height)
-        self.load_csv_button.setToolTip('Click "Load CSV file" button to load a data file.')
+        self.load_csv_button.setToolTip('Click "Load CSV file" button to load a data file. '
+                                       'Supported separators: ",", ";" and "\t"')
         self.load_csv_button.clicked.connect(self.load_csv)
         #self.layout.addWidget(self.load_csv_button, 1, 1, 1, 1)  # added to row 0, column 0, spans 1 row and 2 columns
 
@@ -175,44 +177,45 @@ class Window(QMainWindow):
         # Create an inner QGridLayout
         inner_layout = QGridLayout()
 
-        # initialize dropdown
-        self.initialize_label = QLabel("Initial value to replace NaN:")
-        self.initialize_label.setAlignment(Qt.AlignRight)
-        # self.initialize_label.setToolTip('Set a method to fill missing data with a preliminary number.')
-        self.initialize_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
-        self.initialize_label.setToolTip('Set a method to fill missing data with a preliminary number.'
+        # pre_imputation dropdown
+        self.pre_imputation_label = QLabel("Initial value to replace NaN:")
+        self.pre_imputation_label.setAlignment(Qt.AlignRight)
+        # self.pre_imputation_label.setToolTip('Set a method to fill missing data with a preliminary number.')
+        self.pre_imputation_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
+        self.pre_imputation_label.setToolTip('Set a method to fill missing data with a preliminary number.'
                                             '\n we currently support Column mean and KNNImputer')
-        # self.layout.addWidget(self.initialize_label, 2, 0, 1, 1)
-        self.initialize_dropdown = QComboBox()
-        self.initialize_dropdown.setStyleSheet("QComboBox { font-size: 12px;}")
-        self.initialize_dropdown.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.initialize_dropdown.setMinimumSize(100, 20)  # Set minimum size of QSpinBox (width, height)
-        self.initialize_dropdown.setMaximumSize(100, 20)  # Set maximum size of QSpinBox (width, height)
-        self.initialize_dropdown.setToolTip('Set a method to fill missing data with a preliminary number.'
+        # self.layout.addWidget(self.pre_imputation_label, 2, 0, 1, 1)
+        self.pre_imputation_dropdown = QComboBox()
+        self.pre_imputation_dropdown.setStyleSheet("QComboBox { font-size: 12px;}")
+        self.pre_imputation_dropdown.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.pre_imputation_dropdown.setMinimumSize(100, 20)  # Set minimum size of QSpinBox (width, height)
+        self.pre_imputation_dropdown.setMaximumSize(100, 20)  # Set maximum size of QSpinBox (width, height)
+        self.pre_imputation_dropdown.setToolTip('Set a method to fill missing data with a preliminary number.'
                                             '\n we currently support Column mean and KNNImputer')
-        self.initialize_dropdown.addItem("ColumnMean")
-        self.initialize_dropdown.addItem("KNNImputer")
-        # self.layout.addWidget(self.initialize_dropdown, 2, 1, 1, 1)  # added to row 1, column 1
+        self.pre_imputation_dropdown.addItem("MixType")
+        self.pre_imputation_dropdown.addItem("ColumnMean")
+        self.pre_imputation_dropdown.addItem("KNNImputer")
+        # self.layout.addWidget(self.pre_imputation_dropdown, 2, 1, 1, 1)  # added to row 1, column 1
 
-        # xgb_iter input
-        self.xgb_iter_label = QLabel("XGBoost Iterations:")
-        self.xgb_iter_label.setAlignment(Qt.AlignRight)
-        self.xgb_iter_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
-        self.xgb_iter_label.setToolTip('Set a number for XGBoost iteration, '
-                                 '\n Please set between 3 and 10')
+        # xgb_models input
+        self.xgb_models_label = QLabel("XGBoost Models:")
+        self.xgb_models_label.setAlignment(Qt.AlignRight)
+        self.xgb_models_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
+        self.xgb_models_label.setToolTip('Set a number for XGBoost Models, '
+                                 '\n Please set between 3 and 9')
 
-        self.xgb_iter = QSpinBox()
-        self.xgb_iter.setStyleSheet("QSpinBox { font-size: 12px; font-weight: bold;}")
-        self.xgb_iter.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.xgb_iter.setMinimumSize(50, 20)  # Set minimum size of QSpinBox (width, height)
-        self.xgb_iter.setMaximumSize(50, 20)  # Set maximum size of QSpinBox (width, height)
-        self.xgb_iter.setMinimum(3)
-        self.xgb_iter.setMaximum(9)
-        # self.xgb_iter.setReadOnly(True) # disable manual input
-        # self.layout.addWidget(QLabel("xgb_iter:"), 3, 0)  # added to row 2, column 0
-        # self.layout.addWidget(self.xgb_iter, 2, 3, 1, 1)
-        self.xgb_iter.setToolTip('Set a number for XGBoost iteration, '
-                                 '\n Please set between 3 and 10')
+        self.xgb_models = QSpinBox()
+        self.xgb_models.setStyleSheet("QSpinBox { font-size: 12px; font-weight: bold;}")
+        self.xgb_models.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.xgb_models.setMinimumSize(50, 20)  # Set minimum size of QSpinBox (width, height)
+        self.xgb_models.setMaximumSize(50, 20)  # Set maximum size of QSpinBox (width, height)
+        self.xgb_models.setMinimum(3)
+        self.xgb_models.setMaximum(9)
+        # self.xgb_models.setReadOnly(True) # disable manual input
+        # self.layout.addWidget(QLabel("xgb_models:"), 3, 0)  # added to row 2, column 0
+        # self.layout.addWidget(self.xgb_models, 2, 3, 1, 1)
+        self.xgb_models.setToolTip('Set a number for XGBoost Models, '
+                                 '\n Please set between 3 and 9')
 
         # mf_for_xgb dropdown
         self.mf_for_xgb_label = QLabel("Update initial values using NMF:")
@@ -282,10 +285,10 @@ class Window(QMainWindow):
                                            '\n minimum 5 and maximum 50, larger number will make process slower')
 
         # Add some widgets to the group box's layout
-        inner_layout.addWidget(self.initialize_label, 0, 0, 1, 1)
-        inner_layout.addWidget(self.initialize_dropdown, 0, 1, 1, 1)
-        inner_layout.addWidget(self.xgb_iter_label, 0, 2, 1, 1)
-        inner_layout.addWidget(self.xgb_iter, 0, 3, 1, 1)
+        inner_layout.addWidget(self.pre_imputation_label, 0, 0, 1, 1)
+        inner_layout.addWidget(self.pre_imputation_dropdown, 0, 1, 1, 1)
+        inner_layout.addWidget(self.xgb_models_label, 0, 2, 1, 1)
+        inner_layout.addWidget(self.xgb_models, 0, 3, 1, 1)
 
         inner_layout.addWidget(self.mf_for_xgb_label, 1, 0, 1, 1)
         inner_layout.addWidget(self.mf_for_xgb, 1, 1, 1, 1)
@@ -316,15 +319,15 @@ class Window(QMainWindow):
         inner_layout1 = QGridLayout()
 
         # How many cycles or iterations to be used
-        self.iterations_label = QLabel("Perform iterations:")
-        self.iterations_label.setAlignment(Qt.AlignRight)
-        self.iterations_label.setToolTip('Check this box if you want to use iterations')
-        self.iterations_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
+        self.test_mode_label = QLabel("Export intermediate files:")
+        self.test_mode_label.setAlignment(Qt.AlignRight)
+        self.test_mode_label.setToolTip('Check this box if you want to export intermediate files')
+        self.test_mode_label.setStyleSheet("QLabel {color: #3399CC; font-size: 12px; font-weight: bold;}")
 
-        self.iterations = QCheckBox()
-        self.iterations.setStyleSheet(
+        self.test_mode = QCheckBox()
+        self.test_mode.setStyleSheet(
             "QCheckBox::indicator { width: 20px; height: 20px;} QCheckBox { font-size: 20px;}")
-        self.iterations.setToolTip('Check this box if you want to use iterations')
+        self.test_mode.setToolTip('Check this box if you want to export intermediate files')
 
         # optuna_n_trials input
         self.n_iterations_label = QLabel("Number of iterations:")
@@ -369,8 +372,8 @@ class Window(QMainWindow):
         # self.layout.addWidget(self.mf_for_xgb, 3, 1, 1, 1)
         self.save_plots.setToolTip('Check this box if you want to plot imputed values, only continuous data')
 
-        inner_layout1.addWidget(self.iterations_label, 0, 0, 1, 1)
-        inner_layout1.addWidget(self.iterations, 0, 1, 1, 1)
+        inner_layout1.addWidget(self.test_mode_label, 0, 0, 1, 1)
+        inner_layout1.addWidget(self.test_mode, 0, 1, 1, 1)
         inner_layout1.addWidget(self.n_iterations_label, 0, 2, 1, 1)
         inner_layout1.addWidget(self.n_iterations, 0, 3, 1, 1)
         inner_layout1.addWidget(self.save_imputed_df_label, 1, 0, 1, 1)
@@ -390,9 +393,9 @@ class Window(QMainWindow):
         # button to handle the function
         self.process_button = QPushButton("Xpute")
         self.process_button.clicked.connect(self.process)
+        self.process_button.setToolTip('Press to run imputation - an input file must be provided to start the process')
         self.process_button.setFixedSize(200, 28)  # width, height
-        self.process_button.setStyleSheet(
-            "font-size: 15px; font-weight: bold; color: #ffffff; background-color: #3399CC;")
+        self.process_button.setStyleSheet("QPushButton {font-size: 15px; font-weight: bold; color: #ffffff; background-color: #3399CC;}")
         container = QWidget()
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.process_button, 0, Qt.AlignCenter)
@@ -407,9 +410,9 @@ class Window(QMainWindow):
 
         self.export_csv_button = QPushButton("Export result as CSV")
         self.export_csv_button.clicked.connect(self.export_csv)
+        self.export_csv_button.setToolTip('Press to export imputed data')
         self.export_csv_button.setFixedSize(200, 28)  # width, height
-        self.export_csv_button.setStyleSheet(
-            "font-size: 15px; font-weight: bold; color: #ffffff; background-color: lightblue;")
+        self.export_csv_button.setStyleSheet("QPushButton {font-size: 15px; font-weight: bold; color: #ffffff; background-color: lightblue;}")
         container2 = QWidget()
         button_layout2 = QHBoxLayout()
         button_layout2.addWidget(self.export_csv_button, 0, Qt.AlignCenter)
@@ -439,32 +442,45 @@ class Window(QMainWindow):
 
     def process(self):
         if hasattr(self, 'file_name'):
-            df = pd.read_csv(self.file_name, index_col=0)
+            separators = [',', ';', '\t']
+            df = None
+            for sep in separators:
+                try:
+                    temp_df = pd.read_csv(self.file_name, sep=sep, index_col=0, low_memory=False, skipinitialspace=True)
+                    if temp_df.shape[1] > 2:  # Assuming a valid CSV would have at least 3 columns
+                        df = temp_df
+                        break
+                except pd.errors.ParserError:
+                    continue
+            if df is None:
+                raise ValueError("No valid separator detected for the given file.")
+            # df = pd.read_csv(self.file_name, index_col=0)
             impute_zeros = self.impute_zeros.isChecked()
-            initialize = self.initialize_dropdown.currentText()
-            xgb_iter = self.xgb_iter.value()
+            pre_imputation = self.pre_imputation_dropdown.currentText()
+            xgb_models = self.xgb_models.value()
             mf_for_xgb = self.mf_for_xgb.isChecked()
             use_transformed_df = self.use_transformed_df.isChecked()
             optuna_for_xgb = self.optuna_for_xgb.isChecked()
             optuna_n_trials = self.optuna_n_trials.value()
-            iterations = self.iterations.isChecked()
             n_iterations = self.n_iterations.value()
             save_imputed_df = self.save_imputed_df.isChecked()
             save_plots = self.save_plots.isChecked()
+            test_mode = self.test_mode.isChecked()
 
 
             self.status_label.setText("Running...")
             self.process_button.setEnabled(False)  # disable the process button while the task is running
 
             # start the task in a new thread
-            self.thread = XputeThread(df, impute_zeros, initialize, xgb_iter, mf_for_xgb, use_transformed_df,
-                                      optuna_for_xgb, optuna_n_trials, iterations, n_iterations, save_imputed_df,
-                                      save_plots)
+            self.thread = XputeThread(df, impute_zeros, pre_imputation, xgb_models, mf_for_xgb, use_transformed_df,
+                                      optuna_for_xgb, optuna_n_trials, n_iterations, save_imputed_df,
+                                      save_plots, test_mode)
 
             # connect signals
             self.thread.signal.connect(self.process_finished)
             self.thread.finished.connect(self.thread.deleteLater)
             self.thread.start()
+            # self.thread.wait()
 
     def process_finished(self, result):
         self.status_label.setText("Completed - Ready to export result")
@@ -500,6 +516,9 @@ def xgui():
 
     window = Window()
     window.show()
+
+    # Start the application's event loop
+    app.exec_()
 
     # Start the application's event loop
     app.exec_()
